@@ -1,0 +1,4 @@
+# 백업 산출물
+*.bak-*
+skills.bak-*
+.DS_Store
