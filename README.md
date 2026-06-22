@@ -20,69 +20,75 @@ Claude Code는 **`CLAUDE_CONFIG_DIR` 환경변수**가 가리키는 폴더에서
 
 ---
 
-## 🎬 따라하기 — 개인 계정 + 회사 계정으로 나눠 쓰기
+## 🎬 따라하기 — 회사·개인·개인2 계정으로 나눠 쓰기
 
-### Step 1. 두 계정을 프로필로 정의
+### Step 1. 계정들을 프로필로 정의
 
 **방법 A — leafhub로 자동 (권장):**
 ```bash
-bash scripts/profile.sh add personal   # ~/.claude-personal 생성 + alias + skills 연결
-bash scripts/profile.sh add company     # ~/.claude-company  생성 + alias + skills 연결
+bash scripts/profile.sh add company     # ~/.claude-company   생성 + alias + skills 연결
+bash scripts/profile.sh add personal    # ~/.claude-personal  생성 + alias + skills 연결
+bash scripts/profile.sh add personal2   # ~/.claude-personal2 생성 + alias + skills 연결
 source ~/.zshrc                          # alias 적용
 ```
 
 **방법 B — 직접 `~/.zshrc`에:**
 ```bash
-alias claude-personal='CLAUDE_CONFIG_DIR=~/.claude-personal claude'
 alias claude-company='CLAUDE_CONFIG_DIR=~/.claude-company claude'
+alias claude-personal='CLAUDE_CONFIG_DIR=~/.claude-personal claude'
+alias claude-personal2='CLAUDE_CONFIG_DIR=~/.claude-personal2 claude'
 ```
-> `CLAUDE_CONFIG_DIR=~/.claude-personal claude` = "이번 실행만 개인 폴더로 Claude 켜기". 그래서 `claude-personal`은 개인 계정, `claude-company`는 회사 계정으로 열린다.
+> `CLAUDE_CONFIG_DIR=~/.claude-company claude` = "이번 실행만 회사 폴더로 Claude 켜기". 그래서 `claude-company`는 회사 계정, `claude-personal`·`claude-personal2`는 각각 개인 계정으로 열린다.
 
 이제 터미널에서:
 ```bash
-claude-personal    # 개인 계정으로 Claude Code
 claude-company     # 회사 계정으로 Claude Code
+claude-personal    # 개인 계정
+claude-personal2   # 개인 계정2
 ```
 각 계정은 **처음 한 번 로그인**하면 그 폴더에 인증이 저장된다. (로그인은 수동 — 자동화 불가)
 
 ### Step 2. 문제 확인 — 스킬이 따로 논다
 
-개인 계정에서 스킬 `foo`를 깔았는데, 회사 계정엔 안 보인다. 왜냐면 `~/.claude-personal/skills/`와 `~/.claude-company/skills/`가 **별개 폴더**라서. 현황을 보자:
+개인 계정에서 스킬 `foo`를 깔았는데, 회사·개인2 계정엔 안 보인다. `~/.claude-company/skills/`·`~/.claude-personal/skills/`·`~/.claude-personal2/skills/`가 **각각 별개 폴더**라서. 현황을 보자:
 ```bash
 bash scripts/diagnose.sh
 ```
 ```
 [탐지된 설정 디렉토리]
-  ~/.claude            12개 (실폴더)   (정본·기본 — 모든 프로필 공유)
-  ~/.claude-personal   5개 (실폴더)    (alias 사용)     ← 여기만 foo 있음
-  ~/.claude-company    3개 (실폴더)    (alias 사용)     ← foo 없음
+  ~/.claude             12개 (실폴더)   (정본·기본 — 모든 프로필 공유)
+  ~/.claude-company     3개 (실폴더)    (alias 사용)     ← foo 없음
+  ~/.claude-personal    5개 (실폴더)    (alias 사용)     ← 여기만 foo 있음
+  ~/.claude-personal2   2개 (실폴더)    (alias 사용)     ← foo 없음
 
 [중복 스킬 — 같은 이름이 2곳 이상 '실폴더' = 드리프트 위험]
   ⚠️  storm :
-       - ~/.claude-personal (real)
        - ~/.claude-company (real)
+       - ~/.claude-personal (real)
 ```
 
 ### Step 3. 통합 — 한 번 깔면 모든 계정에서 보이게
 
 ```bash
-bash scripts/consolidate.sh ~/.claude/skills ~/.claude-personal/skills ~/.claude-company/skills
+bash scripts/consolidate.sh ~/.claude/skills \
+     ~/.claude-company/skills ~/.claude-personal/skills ~/.claude-personal2/skills
 ```
 - 각 프로필 `skills/`를 **자동 백업**
 - 흩어진 스킬을 **정본 한곳(`~/.claude/skills`)으로 모음** (중복은 정본 우선)
-- 두 프로필의 `skills/`를 **정본을 가리키는 심볼릭**으로 교체
+- 세 프로필의 `skills/`를 **정본을 가리키는 심볼릭**으로 교체
 
 재진단하면:
 ```
-  ~/.claude            17개 (실폴더)   (정본·기본 — 모든 프로필 공유)
-  ~/.claude-personal   → 정본: ~/.claude/skills   (정본 링크)
-  ~/.claude-company    → 정본: ~/.claude/skills   (정본 링크)
+  ~/.claude             18개 (실폴더)   (정본·기본 — 모든 프로필 공유)
+  ~/.claude-company     → 정본: ~/.claude/skills   (정본 링크)
+  ~/.claude-personal    → 정본: ~/.claude/skills   (정본 링크)
+  ~/.claude-personal2   → 정본: ~/.claude/skills   (정본 링크)
 ```
-**이제 어느 계정에서 스킬을 깔든 `~/.claude/skills`에 들어가고, 세 곳 모두에서 보인다.** (새 세션부터 반영)
+**이제 어느 계정에서 스킬을 깔든 `~/.claude/skills`에 들어가고, 네 곳(기본 포함) 모두에서 보인다.** (새 세션부터 반영)
 
 ### Step 4. 계정 추가는 한 줄
 
-회사2 계정이 생겼다면:
+나중에 계정을 더 늘릴 때(예: 회사2)도 한 줄:
 ```bash
 bash scripts/profile.sh add company2     # 폴더+alias+skills연결 자동
 source ~/.zshrc
